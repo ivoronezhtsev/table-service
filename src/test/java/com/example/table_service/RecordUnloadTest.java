@@ -47,13 +47,12 @@ public class RecordUnloadTest {
         List<Callable<Long>> tasks = new ArrayList<>();
         Random random = new Random();
 
-        long maxId = TOTAL_REQUESTS;
 
         for (int i = 0; i < TOTAL_CONNECTIONS; i++) {
             tasks.add(() -> {
                 long startTime = System.nanoTime();
                 for (int j = 0; j < TOTAL_REQUESTS / TOTAL_CONNECTIONS; j++) {
-                    long randomId = 1 + random.nextLong(maxId);
+                    long randomId = 1 + random.nextInt(TOTAL_REQUESTS);
                     MvcResult result = mockMvc.perform(get("/api/records/" + randomId))
                             .andExpect(status().isOk())
                             .andReturn();
