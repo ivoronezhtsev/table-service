@@ -27,7 +27,7 @@ public class RecordUnloadTest {
     private RecordRepository recordRepository;
 
     private final int TOTAL_CONNECTIONS = 100;
-    private final int TOTAL_REQUESTS = 1000000;  // 1 миллион запросов
+    private final int TOTAL_REQUESTS = 1000000;
 
     @BeforeEach
     public void addRecords() {
@@ -38,7 +38,7 @@ public class RecordUnloadTest {
             record.setDescription("Description " + i);
             records.add(record);
         }
-        recordRepository.saveAll(records);  // Массовое добавление записей
+        recordRepository.saveAll(records);
     }
 
     @Test
@@ -49,35 +49,30 @@ public class RecordUnloadTest {
 
         long maxId = TOTAL_REQUESTS;
 
-        // Создаем 100 задач, каждая из которых будет выполнять выборку произвольной записи по id
         for (int i = 0; i < TOTAL_CONNECTIONS; i++) {
             tasks.add(() -> {
                 long startTime = System.nanoTime();
                 for (int j = 0; j < TOTAL_REQUESTS / TOTAL_CONNECTIONS; j++) {
-                    long randomId = 1 + random.nextLong(maxId);  // Генерируем произвольный ID от 1 до 1 000 000
-                    MvcResult result = mockMvc.perform(get("/api/records/" + randomId))  // Выборка записи по ID
+                    long randomId = 1 + random.nextLong(maxId);
+                    MvcResult result = mockMvc.perform(get("/api/records/" + randomId))
                             .andExpect(status().isOk())
                             .andReturn();
                 }
                 long endTime = System.nanoTime();
-                return TimeUnit.NANOSECONDS.toMillis(endTime - startTime);  // Возвращаем время в миллисекундах
+                return TimeUnit.NANOSECONDS.toMillis(endTime - startTime);
             });
         }
 
-        // Запускаем все задачи и собираем результаты
         List<Future<Long>> results = executorService.invokeAll(tasks);
 
-        // Ждем завершения всех задач
         executorService.shutdown();
         executorService.awaitTermination(1, TimeUnit.HOURS);
 
-        // Сбор статистики
         List<Long> times = new ArrayList<>();
         for (Future<Long> future : results) {
             times.add(future.get());
         }
 
-        // Вычисление общей статистики
         printStatistics(times);
     }
 
